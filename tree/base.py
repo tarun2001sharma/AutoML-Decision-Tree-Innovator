@@ -16,19 +16,19 @@ from tree.utils import *
 
 np.random.seed(42)
 
-class Treenode():
+class Node():
     def __init__(self):
-        self.feature_name = None
-        self.parent = None
-        self.level = 0
+        self.depth = 0
+        self.node_attr = None
         self.values = []
+        self.parent = None
         self.children = []
   
 
-    def add_child(self, child):
+    def insert_child_attr(self, child):
         self.children.append(child)
+        child.depth = self.depth + 1
         child.parent = self
-        child.level = self.level + 1
 
 @dataclass
 class DecisionTree:
@@ -38,245 +38,217 @@ class DecisionTree:
     def __init__(self, criterion="information_gain", max_depth=10):
         self.criterion = criterion
         self.max_depth = max_depth
-        self.root = Treenode()
+        self.root = Node()
         pass
 
-    def DIDO_fit(self, x:pd.DataFrame, y:pd.Series, node):
-
-        if(self.max_depth == 0):                    # if depth of tree is zero simply give maximum outputted class    
-            Y_output = max_prob(y)
-            node.feature_name = Y_output
-
-        if(entropy(y) == 0):                        # Checks if we get final result on the current level
-            node.feature_name = y[0]                # Assigns feature to the node
-
-        if x.shape[1] == 0:                         # check number of columns
-            Y_output = max_prob(y)                   # for the case where there are repeated entries with different output
-            node.feature_name = Y_output
-
-        if (self.max_depth - node.level >= 1) and x.shape[1] != 0:
-
-            feature_names = x.columns.tolist()      # feature_names stores the column headers
-            optimum_feature = feature_names[0]      # finding the best feature to split on
-            maximum_gain = 0
-            minimum_gini = 1e10
-
-            for feature in feature_names:            
-                if self.criterion == 'information_gain':
-                    gain = information_gain(y, x[feature])
-
-                    if gain >= maximum_gain:
-                        maximum_gain = gain
-                        optimum_feature = feature
-
-                if self.criterion == 'gini_index':
-                    gini = gini_index(y, x[feature])
-
-                    if gini<minimum_gini:
-                        minimum_gini = gini
-                        optimum_feature = feature
-        
-            node.feature_name = optimum_feature                    # assigning the name of the node of the tree as the feature name
-            vals = np.unique(np.array(x[optimum_feature]))         # creating a list of unique values of the best attribute
-
-            for val in vals:                                       # creating children nodes based on the values of the best feature
-                child = Treenode()
+    def create_children(self, vals, node, input_type):
+        if input_type=="discrete":
+            for val in vals:                                       # creating children nodes based on the values of the best attr
+                child = Node()
                 node.values.append(val)
-                node.add_child(child)                              # adding child and appending values together so that indexing is same for children and values
+                node.insert_child_attr(child)                              # adding child and appending values together so that indexing is same for children and values
+        else:
+            for i in range(2):
+                child = Node()
+                node.insert_child_attr(child)
+                node.values.append(vals)
+        return node
 
-            for value in node.values:
-                X_new = x.copy(deep = True)                        # created copies for X and y
-                Y_new = y.copy(deep = True)
+    def child_subset_matrix(self, x, y, best_next_attr, value, input_type, i):
+        X_new = x.copy(deep = True)                        # created copies for X and y
+        Y_new = y.copy(deep = True)
 
-                for idx,val in X_new[optimum_feature].iteritems():
-                    if value != val:
-                        X_new = X_new.drop(idx)                    # create the children tables for each of the unique values of the optimum feature
+        if input_type=="discrete":
+            for idx,val in X_new[best_next_attr].iteritems():
+                if value != val:
+                    X_new = X_new.drop(idx)                    # create the children tables for each of the unique values of the optimum attr
+                    Y_new = Y_new.drop(idx)            
+            del X_new[best_next_attr]                         # remove the attr from that table as we cant use it again for splitting 
+        else:
+            for idx, val in X_new[best_next_attr].iteritems():
+                if(i==0):
+                    if val > value:
+                        X_new = X_new.drop(idx)
                         Y_new = Y_new.drop(idx)
-
-                del X_new[optimum_feature]                         # remove the feature from that table as we cant use it again for splitting 
-                X_new = X_new.reset_index(drop=True)               # reset the indices 
-                Y_new = Y_new.reset_index(drop=True)                
-                if(self.max_depth - node.level == 1):              # if we are only one level above the final decision 
-                    Y_output = max_prob(pd.Series(Y_new.tolist()))  # give result using probability (returns the maximum outputted class at this point)
-                    node.children[node.values.index(value)].feature_name = Y_output
                 else:
-                    self.DIDO_fit(X_new, Y_new, node.children[node.values.index(value)]) # recurse for children
-
-        pass
-
-    def DIRO_fit(self, x:pd.DataFrame, y:pd.Series, node):
-
-        if(self.max_depth == 0):                 # if depth of tree is zero simply give mean of outputs
-            Y_output = calculate_mean(y)
-            node.feature_name = Y_output
-
-        if x.shape[1] == 0:
-            Y_output = calculate_mean(y)           # for the case where there are repeated entries with different output
-            node.feature_name = Y_output
-
-        if (self.max_depth - node.level >= 1) and x.shape[1] != 0:
-            maximum_gain = -1e10
-            feature_names = x.columns.tolist()   # feature_names stores the column headers
-            optimum_feature = feature_names[0]   # finding the best feature to split on
-            for feature in feature_names:
-                gain = red_in_var(y, x[feature])
-
-                if (gain >= maximum_gain):
-                    maximum_gain = gain
-                    optimum_feature = feature
-
-            vals = np.unique(np.array(x[optimum_feature]))         # creating a list of unique values of the best attribute
-            node.feature_name = optimum_feature                    # assigning the name of the node of the tree as the feature name
-
-            for val in vals:                                       # creating children nodes based on the values of the best feature 
-                child = Treenode()
-                node.add_child(child)
-                node.values.append(val)
-
-            for value in node.values:
-                X_new = x.copy(deep = True)
-                Y_new = y.copy(deep = True)
-
-                for idx,val in X_new[optimum_feature].iteritems():
-                    if value != val:
+                    if val <= value:
                         X_new = X_new.drop(idx)
                         Y_new = Y_new.drop(idx)
 
-                del X_new[optimum_feature]                      # remove the feature from that table as we cant use it again for splitting 
-                X_new = X_new.reset_index(drop=True)            # reset the indices
-                Y_new = Y_new.reset_index(drop=True)
-                if(self.max_depth - node.level == 1):
-                    Y_output = calculate_mean(pd.Series(Y_new.tolist()))                      # if we are only one level above the final decision 
-                    node.children[node.values.index(value)].feature_name = Y_output         # give result using probability (returns the maximum outputted class at this point)
+        X_new = X_new.reset_index(drop=True)               # reset the indices 
+        Y_new = Y_new.reset_index(drop=True)
+
+        return X_new, Y_new
+
+
+    def DIDO(self, x:pd.DataFrame, y:pd.Series, node):
+
+        if(entropy(y) == 0):                     # If entropy is zero, no need to go for more depth   
+            node.node_attr = y[0]                
+            return
+
+        if x.shape[1] == 0:                         # When we have used all the attributes
+            Y_output = max_occurence(y)                   
+            node.node_attr = Y_output
+            return
+
+        if (self.max_depth - node.depth >= 1) and x.shape[1] != 0:
+
+            attr_list = x.columns.tolist()      # attr_list to store the feature column names 
+            best_next_attr = attr_list[0]      # best attribute to make the decision
+            max_gain = 0                        # Information gain criteria
+            mini_gini = 1e15                    # Gini Index criteria
+
+            for attr in attr_list:            
+                if self.criterion == 'information_gain':
+                    gain = information_gain(y, x[attr])
+                    if gain >= max_gain:
+                        max_gain = gain
+                        best_next_attr = attr
+
+                if self.criterion == 'gini_index':
+                    gini = gini_index(y, x[attr])
+                    if gini<mini_gini:
+                        mini_gini = gini
+                        best_next_attr = attr
+        
+            node.node_attr = best_next_attr                    # the selected best attribute becomes the node
+            vals = np.unique(np.array(x[best_next_attr]))         # finding the values of the best attr
+
+            node = self.create_children(vals, node, "discrete")
+            
+            for value in node.values:
+                X_new, Y_new = self.child_subset_matrix(x, y, best_next_attr, value, "discrete", i = 0)
+
+                if(self.max_depth - node.depth == 1):              # one level before the max_depth, we simply use the most probable output value
+                    Y_output = max_occurence(pd.Series(Y_new.tolist()))
+                    node.children[node.values.index(value)].node_attr = Y_output
                 else:
-                    self.DIRO_fit(X_new, Y_new, node.children[node.values.index(value)])    # recurse for children
+                    self.DIDO(X_new, Y_new, node.children[node.values.index(value)]) # else we use recursion to create the tree for more depth
+
+        pass
+
+    def DIRO(self, x:pd.DataFrame, y:pd.Series, node):
+
+        if(len(y) == 1):                # If only one example remains in the table
+            node.node_attr = y[0]
+            return
+
+        if x.shape[1] == 0:
+            Y_output = meanY(y)
+            node.node_attr = Y_output
+            return
+
+        if (self.max_depth - node.depth >= 1) and x.shape[1] != 0:
+            max_gain = -1e15
+            attr_list = x.columns.tolist() 
+            best_next_attr = attr_list[0]   
+            for attr in attr_list:
+                gain = red_in_var(y, x[attr])
+
+                if (gain >= max_gain):
+                    max_gain = gain
+                    best_next_attr = attr
+
+            vals = np.unique(np.array(x[best_next_attr]))         
+            node.node_attr = best_next_attr                 
+
+            node = self.create_children(vals, node, "discrete")
+
+            for value in node.values:
+                X_new, Y_new = self.child_subset_matrix(x, y, best_next_attr, value, "discrete", i = 0)
+                if(self.max_depth - node.depth == 1):
+                    Y_output = meanY(pd.Series(Y_new.tolist()))                       
+                    node.children[node.values.index(value)].node_attr = Y_output        
+                else:
+                    self.DIRO(X_new, Y_new, node.children[node.values.index(value)])    
 
         pass
 
 
-    def RIDO_fit(self, x:pd.DataFrame, y:pd.Series, node):
-
-        if(self.max_depth == 0):
-            Y_output = max_prob(y)
-            node.feature_name = Y_output
+    def RIDO(self, x:pd.DataFrame, y:pd.Series, node):
         
-        if(len(y) == 1):                                     
-        
-            node.feature_name = y[0]                          
+        if(entropy(y) == 0):
+            node.node_attr = y[0]
             return
 
-        if (self.max_depth - node.level >= 1) and x.shape[1] != 0:
-            maximum_gain = -1e10   
+        if x.shape[1] == 0:                         
+            Y_output = max_occurence(y)                  
+            node.node_attr = Y_output
+            return
+
+        if (self.max_depth - node.depth >= 1) and x.shape[1] != 0:
+            max_gain = -1e15   
+            mini_gini = 1e15
             split_val = 0
-            feature_names = x.columns.tolist()
-            optimum_feature = feature_names[0]
-            for feature in feature_names:
+            attr_list = x.columns.tolist()
+            best_next_attr = attr_list[0]
+            for attr in attr_list:
                 if(self.criterion == 'information_gain'):
-                    output = information_gain_RI(y,  x[feature])
+                    output = information_gain_real_in(y,  x[attr])
                     gain = output[0]
-                    if (gain >= maximum_gain):
-                        maximum_gain = gain
+                    if (gain >= max_gain):
+                        max_gain = gain
                         split_val = output[1]
-                        optimum_feature = feature
+                        best_next_attr = attr
 
                 if(self.criterion == 'gini_index'):
-                    output = gini_index_RI(y, x[feature])
-                    gain = -output[0]
-                    if (gain >= maximum_gain):
-                        maximum_gain = gain
+                    output = gini_index_real_in(y, x[attr])
+                    gini = output[0]
+                    if (gini <= mini_gini):
+                        mini_gini = gini
                         split_val = output[1]
-                        optimum_feature = feature
+                        best_next_attr = attr
 
-            node.feature_name = optimum_feature
+            node.node_attr = best_next_attr
 
-            for i in range(2):
-                child = Treenode()
-                node.add_child(child)
-                node.values.append(split_val)
-
+            node = self.create_children(split_val, node, "real")
 
             for i in range(2):
-                X_new = x.copy(deep = True)
-                Y_new = y.copy(deep = True)
 
-                for idx, val in X_new[optimum_feature].iteritems():
-                    if(i==0):
-                        if val > split_val:
-                            X_new = X_new.drop(idx)
-                            Y_new = Y_new.drop(idx)
-                    else:
-                        if val <= split_val:
-                            X_new = X_new.drop(idx)
-                            Y_new = Y_new.drop(idx)
-
-                X_new = X_new.reset_index(drop=True)
-                Y_new = Y_new.reset_index(drop=True)
-                
-                if(self.max_depth - node.level == 1):
-                    node.children[i].feature_name = max_prob(pd.Series(Y_new.tolist()))
+                X_new, Y_new = self.child_subset_matrix(x, y, best_next_attr, split_val, "real", i)                
+                if(self.max_depth - node.depth == 1):
+                    node.children[i].node_attr = max_occurence(pd.Series(Y_new.tolist()))
                 else:
-                    self.RIDO_fit(X_new, Y_new, node.children[i])
+                    self.RIDO(X_new, Y_new, node.children[i])
 
         pass
 
 
-    def RIRO_fit(self, x: pd.DataFrame, y: pd.Series, node):
-
-        if(self.max_depth == 0):
-            Y_output = calculate_mean(y)
-            node.feature_name = Y_output
+    def RIRO(self, x: pd.DataFrame, y: pd.Series, node):
 
         if(len(y) == 1):
-            node.feature_name = y[0]
+            node.node_attr = y[0]
             return
         if x.shape[1] == 0:
-            Y_output = calculate_mean(y)
-            node.feature_name = Y_output
+            Y_output = meanY(y)
+            node.node_attr = Y_output
+            return
 
-        if (self.max_depth - node.level >= 1) and x.shape[1] != 0:
-            maximum_gain = -1e10
+        if (self.max_depth - node.depth >= 1) and x.shape[1] != 0:
+            max_gain = -1e15
             split_val = 0
-            feature_names = x.columns.tolist()
-            optimum_feature = feature_names[0]
-            for feature in feature_names:
-                output = red_in_var_RI(y, x[feature])
+            attr_list = x.columns.tolist()
+            best_next_attr = attr_list[0]
+            for attr in attr_list:
+                output = red_in_var_real_in(y, x[attr])
                 gain = output[0]
-                if (gain >= maximum_gain):
-                    maximum_gain = gain
+                if (gain >= max_gain):
+                    max_gain = gain
                     split_val = output[1]
-                    optimum_feature = feature
+                    best_next_attr = attr
 
 
-            node.feature_name = optimum_feature
+            node.node_attr = best_next_attr
 
-            for i in range(2):
-                child = Treenode()
-                node.add_child(child)
-                node.values.append(split_val)
-
+            node = self.create_children(split_val, node, "real")
 
             for i in range(2):
-                X_new = x.copy(deep=True)
-                Y_new = y.copy(deep=True)
-
-                for idx, val in X_new[optimum_feature].iteritems():
-                    if i == 0:
-                        if val > split_val:
-                            X_new = X_new.drop(idx)
-                            Y_new = Y_new.drop(idx)
-                    else:
-                        if val <= split_val:
-                            X_new = X_new.drop(idx)
-                            Y_new = Y_new.drop(idx)
-
-
-                X_new = X_new.reset_index(drop=True)
-                Y_new = Y_new.reset_index(drop=True)
-
-                if(self.max_depth - node.level == 1):
-                    node.children[i].feature_name = calculate_mean(pd.Series(Y_new.tolist()))
+                X_new, Y_new = self.child_subset_matrix(x, y, best_next_attr, split_val, "real", i)                
+                if(self.max_depth - node.depth == 1):
+                    node.children[i].node_attr = meanY(pd.Series(Y_new.tolist()))
                 else:
-                    self.RIRO_fit(X_new, Y_new, node.children[i])
+                    self.RIRO(X_new, Y_new, node.children[i])
 
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
@@ -284,15 +256,31 @@ class DecisionTree:
         Function to train and construct the decision tree
         """
 
+        # Check the type of input and output, and call corresponding function to create tree
         if isinstance(X.iloc[0][0],(int, np.int64)) and isinstance(y[0],(int, np.int64)):
-            self.DIDO_fit(X, y, self.root)
+            if(self.max_depth == 0):    
+                Y_output = max_occurence(y)
+                self.root.node_attr = Y_output
+            else:
+                self.DIDO(X, y, self.root)
+        elif isinstance(X.iloc[0][0], (float, np.float64)) and isinstance(y[0], (int, np.int64)):
+            if(self.max_depth == 0):                       
+                Y_output = max_occurence(y)
+                self.root.node_attr = Y_output
+            else:
+                self.RIDO(X, y, self.root)
         elif isinstance(X.iloc[0][0], (int, np.int64)) and isinstance(y[0], (float, np.float64)):
-            self.DIRO_fit(X, y, self.root)
-        elif isinstance(X.iloc[0][0], (float, np.float64)) and isinstance(y[0], (float, np.float64)):
-            self.RIRO_fit(X, y, self.root)
+            if(self.max_depth == 0):
+                Y_output = meanY(y)
+                self.root.node_attr = Y_output
+            else:
+                self.DIRO(X, y, self.root)
         else:
-            self.RIDO_fit(X, y, self.root)
-
+            if(self.max_depth == 0):
+                Y_output = meanY(y)
+                self.root.node_attr = Y_output
+            else:
+                self.RIRO(X, y, self.root)
         pass
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
@@ -300,28 +288,32 @@ class DecisionTree:
         Funtion to run the decision tree on test inputs
         """
         y=[]
+
+        # For discrete input, we traverse the tree if node value matches attr name
         if isinstance(X.iloc[0][0], (int, np.integer)):
             for i in range (X.shape[0]):
-                row = X.iloc[i]
+                curr_example = X.iloc[i]
                 tree_root = self.root
-                while (len(tree_root.children)!=0):
-                    value = row[tree_root.feature_name]
+                while (len(tree_root.children)>0):
+                    value = curr_example[tree_root.node_attr]
                     tree_root = tree_root.children[tree_root.values.index(value)]
-                y.append(tree_root.feature_name)
-            
+                y.append(tree_root.node_attr)
+        
+        # For real input, we traverse using splits
         else:
             for i in range(X.shape[0]):
-                row = X.iloc[i]
+                curr_example = X.iloc[i]
                 tree_root = self.root
-                while (len(tree_root.children) != 0):
-                    value = row[tree_root.feature_name]
+                while (len(tree_root.children)>0):
+                    value = curr_example[tree_root.node_attr]
                     if value <= tree_root.values[0]:
                         tree_root = tree_root.children[0]
                     else:
                         tree_root = tree_root.children[1]
-                y.append(tree_root.feature_name)
+                y.append(tree_root.node_attr)
 
-        return pd.Series(y)
+        y = pd.Series(y)
+        return y
         pass
 
     def plot(self) -> None:

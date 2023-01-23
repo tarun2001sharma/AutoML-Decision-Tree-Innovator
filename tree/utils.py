@@ -2,15 +2,14 @@ import pandas as pd
 import numpy as np
 import math
 
-def max_prob(Y):
+def max_occurence(Y):
     d={}
     for i in Y:
         if i not in d: d[i] = 1
         else: d[i] += 1
     return max(d, key= lambda x: d[x])
 
-
-def calculate_mean(Y):
+def meanY(Y):
     if(len(Y)==0): return 0
     y=np.array(Y)
     return sum(Y)/len(Y)
@@ -26,7 +25,7 @@ def red_in_var(Y,attr):
         red -= (len(d[i])/len(attr))*(np.var(d[i]))
     return red
 
-def red_in_var_RI(Y, attr):
+def red_in_var_real_in(Y, attr):
     # Reduction in Variance when real input and real output
     # returns (gain, split_value)
     if len(Y)==0:
@@ -85,7 +84,7 @@ def gini_index(Y: pd.Series, attr) -> float:
     pass
 
 
-def gini_index_RI(Y, attr):
+def gini_index_real_in(Y, attr):
     # Real Input and Discrete Output
     Y = np.array(Y)
     attr = np.array(attr)
@@ -150,7 +149,7 @@ def information_gain(Y: pd.Series, attr: pd.Series) -> float:
     return entropy(Y) - value_entropy
     pass
 
-def information_gain_RI(Y, attr):
+def information_gain_real_in(Y, attr):
     # returns (gain, split)
     if(len(Y)==1):
         return [0,Y[0]]
