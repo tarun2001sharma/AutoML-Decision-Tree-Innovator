@@ -293,28 +293,52 @@ class DecisionTree:
         if isinstance(X.iloc[0][0], (int, np.integer)):
             for i in range (X.shape[0]):
                 curr_example = X.iloc[i]
-                tree_root = self.root
-                while (len(tree_root.children)>0):
-                    value = curr_example[tree_root.node_attr]
-                    tree_root = tree_root.children[tree_root.values.index(value)]
-                y.append(tree_root.node_attr)
+                root_node = self.root
+                while (len(root_node.children)>0):
+                    value = curr_example[root_node.node_attr]
+                    root_node = root_node.children[root_node.values.index(value)]
+                y.append(root_node.node_attr)
         
         # For real input, we traverse using splits
         else:
             for i in range(X.shape[0]):
                 curr_example = X.iloc[i]
-                tree_root = self.root
-                while (len(tree_root.children)>0):
-                    value = curr_example[tree_root.node_attr]
-                    if value <= tree_root.values[0]:
-                        tree_root = tree_root.children[0]
+                root_node = self.root
+                while (len(root_node.children)>0):
+                    value = curr_example[root_node.node_attr]
+                    if value <= root_node.values[0]:
+                        root_node = root_node.children[0]
                     else:
-                        tree_root = tree_root.children[1]
-                y.append(tree_root.node_attr)
+                        root_node = root_node.children[1]
+                y.append(root_node.node_attr)
 
         y = pd.Series(y)
         return y
         pass
+
+    def print_tree_discrete_in(self, node):
+            if len(node.children) == 0:
+                print(" | "*node.depth, " --> ", "Value = ", str(node.node_attr), ", Depth = " , node.depth)
+            else:
+                count = 0
+                for i in node.children:
+                    print(" | "*node.depth, "?(X" + str(node.depth + 1) + " = " + str(node.values[count]) + ")")
+                    self.print_tree_discrete_in(i)
+                    count += 1
+
+    def print_tree_real_in(self, node):
+            if len(node.children) == 0:
+                print(" | "*node.depth, " --> ", "Value = ", str(node.node_attr), ", Depth = " , node.depth)
+            else:
+                count = 0
+                for i in node.children:
+                    if count == 0:
+                        print(" | "*node.depth, "?(X" + str(node.depth + 1) + " < " + str(node.values[count]) + ")")
+                        self.print_tree_real_in(i)
+                    else:
+                        print(" | "*node.depth, "?(X" + str(node.depth + 1) + " > " + str(node.values[count]) + ")")
+                        self.print_tree_real_in(i)
+                    count += 1
 
     def plot(self) -> None:
         """
@@ -328,4 +352,10 @@ class DecisionTree:
             N: Class C
         Where Y => Yes and N => No
         """
+
+        root_node = self.root
+        if isinstance(self.root.values[0], (int, np.integer)):
+            self.print_tree_discrete_in(root_node)
+        else:
+            self.print_tree_real_in(root_node)
         pass
