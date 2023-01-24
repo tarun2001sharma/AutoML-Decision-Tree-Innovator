@@ -17,7 +17,7 @@
   <img width="400" src="learn_N.png">
 </p>
 
-##### Prediction by varying M
+##### Prediction by varying N
 
 <p align="center">
   <img width="400" src="predict_N.png">
