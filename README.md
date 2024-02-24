@@ -1,50 +1,70 @@
-### Questions
 
-1. Complete the decision tree implementation in tree/base.py. **[5 marks]**
-The code should be written in Python and not use existing libraries other than the ones already imported in the code. Your decision tree should work for four cases: i) discrete features, discrete output; ii) discrete features, real output; iii) real features, discrete output; real features, real output. Your decision tree should be able to use GiniIndex or InformationGain as the criteria for splitting. Your code should also be able to plot/display the decision tree. 
+# Efficiency Analysis and Classification with Machine Learning
 
-    > You should be editing the following files.
-  
-    - `metrics.py`: Complete the performance metrics functions in this file. 
+The title reflects the ambition of creating a versatile and innovative machine learning tool focused on decision trees, with applications ranging from automobile efficiency analysis to broader classification and regression problems. It suggests a forward-thinking approach to automating machine learning processes and emphasizes the project's contribution to decision tree algorithms and their applications.
 
-    - `usage.py`: Run this file to check your solutions.
+## Introduction
+This project explores the application of machine learning techniques to analyze and predict automobile efficiency based on various vehicle characteristics. Utilizing the `auto-mpg.data`, a well-known dataset in the machine learning community, we delve into regression and classification problems, employing different models and evaluating their performance. This project also includes a comprehensive implementation and analysis task based on decision trees, addressing various scenarios of feature and output types.
 
-    - tree (Directory): Module for decision tree.
-      - `base.py` : Complete Decision Tree Class.
-      - `utils.py`: Complete all utility functions.
-      - `__init__.py`: **Do not edit this**
+## Assignment Overview
+The project encompasses a series of tasks aimed at implementing and evaluating a decision tree algorithm from scratch, covering cases with discrete and real features and outputs. The decision tree implementation should support both Gini Index and Information Gain as criteria for node splitting and include capabilities for visualization.
 
-    > You should run _usage.py_ to check your solutions. 
+### Tasks
+1. **Decision Tree Implementation (`tree/base.py`):**
+   - Implement the decision tree to handle:
+     i) discrete features, discrete output;
+     ii) discrete features, real output;
+     iii) real features, discrete output;
+     iv) real features, real output.
+   - Support Gini Index and Information Gain for splitting.
+   - Enable decision tree visualization.
 
-2. 
-    Generate your dataset using the following lines of code
+2. **Performance Metrics (`metrics.py`):**
+   - Complete the implementation of performance metrics functions.
 
-    ```python
-    from sklearn.datasets import make_classification
-    X, y = make_classification(
-    n_features=2, n_redundant=0, n_informative=2, random_state=1, n_clusters_per_class=2, class_sep=0.5)
+3. **Usage and Validation (`usage.py` & `classification-exp.py`):**
+   - Utilize these scripts to validate the decision tree implementation and performance metrics.
 
-    # For plotting
-    import matplotlib.pyplot as plt
-    plt.scatter(X[:, 0], X[:, 1], c=y)
-    ```
+4. **Dataset Generation:**
+   - Generate datasets using `sklearn.datasets.make_classification` for experimentation.
 
-    a) Show the usage of *your decision tree* on the above dataset. The first 70% of the data should be used for training purposes and the remaining 30% for test purposes. Show the accuracy, per-class precision and recall of the decision tree you implemented on the test dataset. **[1 mark]**
+5. **Experiments (`experiments.py`, `auto-efficiency.py`):**
+   - Conduct runtime complexity analysis.
+   - Apply the decision tree to the automobile efficiency problem.
+   - Compare the custom decision tree model with scikit-learn's decision tree.
 
-    b) Use 5 fold cross-validation on the dataset. Using nested cross-validation find the optimum depth of the tree. **[2 marks]**
-    
-    > You should be editing `classification-exp.py` for the code containing the experiments.
+6. **Subjective Answers:**
+   - Document timing analysis and display plots in `assignment_q<question-number>_subjective_answers.md`.
 
-3. 
-    a) Show the usage of your decision tree for the [automotive efficiency](https://archive.ics.uci.edu/ml/datasets/auto+mpg) problem. **[1 mark]**
-    
-    b) Compare the performance of your model with the decision tree module from scikit learn. **[1 mark]**
-    
-   > You should be editing `auto-efficiency.py` for the code containing the experiments.
-    
-4. Create some fake data to do some experiments on the runtime complexity of your decision tree algorithm. Create a dataset with N samples and M binary features. Vary M and N to plot the time taken for: 1) learning the tree, 2) predicting for test data. How do these results compare with theoretical time complexity for decision tree creation and prediction. You should do the comparison for all the four cases of decision trees. **[2 marks]**	
+## Project Structure and Tasks
+- `tree` (Directory): Contains the decision tree module, including the base class and utility functions. Key tasks involve implementing the decision tree algorithm capable of handling different types of data and criteria for splitting.
+- `metrics.py`: Implement performance metrics to evaluate the decision tree's predictions.
+- `usage.py`: Demonstrates the application of the decision tree on generated datasets, including training, testing, and evaluation.
+- `classification-exp.py`: Contains classification experiments, including the usage of the decision tree for the automotive efficiency problem and comparison with scikit-learn's implementation.
+- `experiments.py`: Focuses on experiments to analyze the runtime complexity of the decision tree algorithm, varying the number of samples (N) and features (M).
 
-    >You should be editing `experiments.py` for the code containing the experiments.
+### Experiments and Results
+- **Dataset Usage:** The project includes detailed instructions on generating a dataset for training and testing the decision tree, specifying the split for training and testing purposes, and evaluating the model's performance using accuracy, precision, and recall metrics.
+- **Cross-Validation:** Implement 5-fold cross-validation to determine the optimum depth of the decision tree, including nested cross-validation for thorough analysis.
+- **Automotive Efficiency Problem:** Apply the decision tree to analyze automobile efficiency, comparing the custom implementation with scikit-learn's decision tree module.
+- **Runtime Complexity Analysis:** Conduct experiments on the decision tree's runtime complexity, comparing empirical results with theoretical expectations across different data scenarios.
 
 
-You can answer the subjectve questions (timing analysis, displaying plots) by creating `assignment_q<question-number>_subjective_answers.md`
+## Setup and Installation
+To set up the project environment:
+1. Ensure Python 3.6+ is installed.
+2. Install required dependencies: `pip install -r requirements.txt` (Note: The actual command may vary based on the project's dependency management tool, e.g., Poetry, indicated by `pyproject.toml`).
+
+## Usage
+To replicate the analysis and results:
+- Run `python usage.py` to see an example workflow, including data loading, model training, and evaluation.
+- Execute `python experiments.py` to perform comprehensive experiments and generate performance reports.
+
+## Results
+The project aims to provide insights into the efficiency of automobiles, with models evaluated based on metrics like accuracy, precision, recall, and F1 score. Generated plots (e.g., `learn_M.png`, `predict_M.png`) visualize the models' learning processes and predictive capabilities.
+
+## Contributing
+Paras Gupta and Tarun Sharma, IIT Gandhinagar.
+
+## License
+This project is open source and available under the [MIT License](LICENSE).
